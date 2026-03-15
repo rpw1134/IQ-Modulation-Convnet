@@ -16,7 +16,7 @@ class IQGenerator:
         """
         self.rng = np.random.default_rng(seed)
 
-    def generate(self, n_samples, length=256, seed=None, modulation_scheme = Literal["BPSK", "QPSK", "16QAM", "64QAM"]):
+    def generate_signals(self, n_samples, length=256, seed=None, modulation_scheme = Literal["BPSK", "QPSK", "16QAM", "64QAM"]):
         """Randomly draws constellation point indices, maps them to odd-integer
         amplitude levels (e.g. ±1 for BPSK, ±1/±3 for QPSK), and stacks I
         and Q channels.
@@ -53,4 +53,14 @@ class IQGenerator:
 
         # stack to create distinct channels
         return np.stack((i_samples, q_samples), axis=2)
+
+    def generate_symbols_for_signals(self):
+        pass
+
+    def generate_dataset(self):
+        pass
+
+    @property
+    def data_loader(self):
+        pass
 
