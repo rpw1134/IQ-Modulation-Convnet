@@ -5,10 +5,34 @@ from .maps import *
 
 
 class IQGenerator:
+    """Uses a seeded NumPy random generator so that datasets are reproducible.
+    Supported schemes: BPSK, QPSK, 16QAM, 64QAM.
+    """
+
     def __init__(self, seed: int = 42):
+        """
+        Args:
+            seed: Seed for the default NumPy random generator. Defaults to 42.
+        """
         self.rng = np.random.default_rng(seed)
 
     def generate(self, n_samples, length=256, seed=None, modulation_scheme = Literal["BPSK", "QPSK", "16QAM", "64QAM"]):
+        """Randomly draws constellation point indices, maps them to odd-integer
+        amplitude levels (e.g. ±1 for BPSK, ±1/±3 for QPSK), and stacks I
+        and Q channels.
+
+        Args:
+            n_samples: Number of independent IQ sequences to generate.
+            length: Number of symbols per sequence. Defaults to 256.
+            seed: Optional per-call seed. When provided, a fresh generator is
+                created for this call only, leaving the instance generator
+                unchanged. Defaults to None (use the instance generator).
+            modulation_scheme: One of "BPSK", "QPSK", "16QAM", or "64QAM".
+
+        Returns:
+            np.ndarray of shape (n_samples, length, 2), where axis 2 holds
+            the I sample at index 0 and the Q sample at index 1.
+        """
         # in case you want to use the same generator to create different datasets
         rand = self.rng
         if seed is not None:
