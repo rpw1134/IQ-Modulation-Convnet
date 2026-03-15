@@ -9,12 +9,16 @@ class IQGenerator:
     Supported schemes: BPSK, QPSK, 16QAM, 64QAM.
     """
 
-    def __init__(self, seed: int = 42):
+    def __init__(self, seed: int = 42, scheme_distribution = [25,25,25,25]):
         """
         Args:
             seed: Seed for the default NumPy random generator. Defaults to 42.
+            scheme_distribution: Percentage distribution of modulation schemes in generated datasets. Should be a list of 4 integers summing to 100, corresponding to BPSK, QPSK, 16QAM, and 64QAM respectively. Defaults to an even distribution.
         """
         self.rng = np.random.default_rng(seed)
+        self.scheme_distribution = scheme_distribution
+        if sum(scheme_distribution) != 100 or len(scheme_distribution) != 4:
+            raise ValueError("scheme_distribution must be a list of 4 integers summing to 100.")
 
     def generate_signals(self, n_samples, length=256, seed=None, modulation_scheme = Literal["BPSK", "QPSK", "16QAM", "64QAM"]):
         """Randomly draws constellation point indices, maps them to odd-integer
