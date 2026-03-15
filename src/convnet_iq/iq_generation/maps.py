@@ -9,6 +9,14 @@ SCHEME_OFFSETS = {
 }
 TOTAL_CLASSES = 86    # 2 + 4 + 16 + 64
 
+# (i_offset, i_step, q_offset, q_step) for converting amplitude values → table indices
+SCHEME_NORMALIZATION = {
+    "BPSK":  (1, 2, 0, 1),
+    "QPSK":  (1, 2, 1, 2),
+    "16QAM": (3, 2, 3, 2),
+    "64QAM": (7, 2, 7, 2),
+}
+
 
 def build_lookup_table(symbol_map, i_levels, q_levels, global_offset):
     """Build a 2D numpy lookup table mapping (I, Q) constellation points to global class indices.
@@ -112,4 +120,11 @@ qam64_map = {
     for q, q_bits in zip(_qam64_levels, _qam64_gray)
 }
 qam64_table = build_lookup_table(qam64_map, _qam64_levels, _qam64_levels, SCHEME_OFFSETS["64QAM"])
+
+scheme_to_index_table_map = {
+    "BPSK": bpsk_table,
+    "QPSK": qpsk_table,
+    "16QAM": qam16_table,
+    "64QAM": qam64_table,
+}
 

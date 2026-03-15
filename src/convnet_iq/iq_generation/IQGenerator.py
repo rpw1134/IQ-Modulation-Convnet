@@ -54,8 +54,12 @@ class IQGenerator:
         # stack to create distinct channels
         return np.stack((i_samples, q_samples), axis=2)
 
-    def generate_symbols_for_signals(self):
-        pass
+    def generate_softmax_indices_for_signals(self, iq_signals, modulation_scheme = Literal["BPSK", "QPSK", "16QAM", "64QAM"]):
+        index_table = scheme_to_index_table_map[modulation_scheme]
+        i_offset, i_step, q_offset, q_step = SCHEME_NORMALIZATION[modulation_scheme]
+        i_idx = (iq_signals[:, :, 0] + i_offset) // i_step
+        q_idx = (iq_signals[:, :, 1] + q_offset) // q_step
+        return index_table[i_idx, q_idx]
 
     def generate_dataset(self):
         pass
