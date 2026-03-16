@@ -1,6 +1,9 @@
 import numpy as np
 from typing import Literal
 
+from torch.utils.data import Dataset
+
+from .IQDataset import IQDataset
 from .maps import *
 
 
@@ -9,7 +12,7 @@ class IQGenerator:
     Supported schemes: BPSK, QPSK, 16QAM, 64QAM.
     """
 
-    def __init__(self, seed: int = 42, scheme_distribution = [25,25,25,25]):
+    def __init__(self, seed: int = 42, scheme_distribution = (0.25,0.25,0.25,0.25)):
         """
         Args:
             seed: Seed for the default NumPy random generator. Defaults to 42.
@@ -17,10 +20,10 @@ class IQGenerator:
         """
         self.rng = np.random.default_rng(seed)
         self.scheme_distribution = scheme_distribution
-        if sum(scheme_distribution) != 100 or len(scheme_distribution) != 4:
-            raise ValueError("scheme_distribution must be a list of 4 integers summing to 100.")
+        if sum(scheme_distribution) != 1 or len(scheme_distribution) != 4:
+            raise ValueError("scheme_distribution must be a list of 4 floats summing to 1.")
 
-    def generate_signals(self, n_samples, length=256, seed=None, modulation_scheme = Literal["BPSK", "QPSK", "16QAM", "64QAM"]):
+    def generate_signals(self, n_samples=128, length=256, seed=None, modulation_scheme = Literal["BPSK", "QPSK", "16QAM", "64QAM"]):
         """Randomly draws constellation point indices, maps them to odd-integer
         amplitude levels (e.g. ±1 for BPSK, ±1/±3 for QPSK), and stacks I
         and Q channels.
@@ -65,8 +68,46 @@ class IQGenerator:
         q_idx = (iq_signals[:, :, 1] + q_offset) // q_step
         return index_table[i_idx, q_idx]
 
-    def generate_dataset(self):
-        pass
+    def generate_dataset(self, num_samples=128, length=256):
+        # needs to use the scheme distribution to create a dataset with appropriate proportions
+        # should essentially create a bunch of signals of the same length to pass in for training or validation purposes
+        # will return a pytorch dataset
+        # needs num_samples and length parameters
+        # creates two arrays, num_samples x length with values between 0 and 1
+        # transforms each element into its pair based on the scheme distribution and the modulation scheme mapping
+        bpsk_dist, qpsk_dist, sixteen_qam_dist, sixtyfour_qam_dist  = self.scheme_distribution
+        first_bound = bpsk_dist
+        second_bound = first_bound + qpsk_dist
+        third_bound = second_bound + sixteen_qam_dist
+
+        # a uniform distribution is used to determine which modulation scheme each sample will belong to
+        uni = self.rng.random(size=(num_samples,))
+        bpsk_mask = (uni < first_bound),
+        qpsk_mask = (uni >= first_bound) & (uni < second_bound)
+        stqam_mask = (uni >= second_bound) & (uni >= third_bound)
+        sfqam_mask = (uni >= third_bound)
+
+        iq_arr = np.zeros(shape=(num_samples, length, 2), dtype=np.int8)
+        symbol_indices_arr = np.zeros(shape=(num_samples, length), dtype=np.uint8)
+
+        for mask, scheme in [
+            (bpsk_mask, "BPSK"),
+            (qpsk_mask, "QPSK"),
+            (stqam_mask, "16QAM"),
+            (sfqam_mask, "64QAM"),
+        ]:
+            count = mask.sum()
+            if count == 0:
+                continue
+            iq_arr[mask] = self.generate_signals(n_samples=num_samples, length=length, modulation_scheme=scheme)
+            symbol_indices_arr[mask] = self.generate_softmax_indices_for_signals(iq_arr[mask], modulation_scheme=scheme)
+
+        return IQDataset(data=iq_arr, labels=symbol_indices_arr)
+
+
+
+
+
 
     @property
     def data_loader(self):
