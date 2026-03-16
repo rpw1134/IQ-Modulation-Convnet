@@ -23,7 +23,7 @@ class IQGenerator:
         if sum(scheme_distribution) != 1 or len(scheme_distribution) != 4:
             raise ValueError("scheme_distribution must be a list of 4 floats summing to 1.")
 
-    def generate_signals(self, n_samples=128, length=256, seed=None, modulation_scheme = Literal["BPSK", "QPSK", "16QAM", "64QAM"]):
+    def generate_signals(self, n_samples=128, length=256, seed=None, modulation_scheme: Literal["BPSK", "QPSK", "16QAM", "64QAM"] = "BPSK"):
         """Randomly draws constellation point indices, maps them to odd-integer
         amplitude levels (e.g. ±1 for BPSK, ±1/±3 for QPSK), and stacks I
         and Q channels.
@@ -61,7 +61,7 @@ class IQGenerator:
         # stack to create distinct channels
         return np.stack((i_samples, q_samples), axis=2)
 
-    def generate_softmax_indices_for_signals(self, iq_signals, modulation_scheme = Literal["BPSK", "QPSK", "16QAM", "64QAM"]):
+    def generate_softmax_indices_for_signals(self, iq_signals, modulation_scheme: Literal["BPSK", "QPSK", "16QAM", "64QAM"] = "BPSK"):
         index_table = scheme_to_index_table_map[modulation_scheme]
         i_offset, i_step, q_offset, q_step = SCHEME_NORMALIZATION[modulation_scheme]
         i_idx = (iq_signals[:, :, 0] + i_offset) // i_step
@@ -82,31 +82,32 @@ class IQGenerator:
 
         # a uniform distribution is used to determine which modulation scheme each sample will belong to
         uni = self.rng.random(size=(num_samples,))
-        bpsk_mask = (uni < first_bound),
+        bpsk_mask = uni < first_bound
         qpsk_mask = (uni >= first_bound) & (uni < second_bound)
-        stqam_mask = (uni >= second_bound) & (uni >= third_bound)
-        sfqam_mask = (uni >= third_bound)
+        stqam_mask = (uni >= second_bound) & (uni < third_bound)
+        sfqam_mask = uni >= third_bound
 
+        # allocate memory
         iq_arr = np.zeros(shape=(num_samples, length, 2), dtype=np.int8)
         symbol_indices_arr = np.zeros(shape=(num_samples, length), dtype=np.uint8)
 
-        for mask, scheme in [
+        # just for type checking
+        schemes: list[tuple[np.ndarray, Literal["BPSK", "QPSK", "16QAM", "64QAM"]]] = [
             (bpsk_mask, "BPSK"),
             (qpsk_mask, "QPSK"),
             (stqam_mask, "16QAM"),
             (sfqam_mask, "64QAM"),
-        ]:
+        ]
+
+        # loop over each mask and set to a generate signal. Set labels based on the scheme
+        for mask, scheme in schemes:
             count = mask.sum()
             if count == 0:
                 continue
-            iq_arr[mask] = self.generate_signals(n_samples=num_samples, length=length, modulation_scheme=scheme)
+            iq_arr[mask] = self.generate_signals(n_samples=count, length=length, modulation_scheme=scheme)
             symbol_indices_arr[mask] = self.generate_softmax_indices_for_signals(iq_arr[mask], modulation_scheme=scheme)
 
         return IQDataset(data=iq_arr, labels=symbol_indices_arr)
-
-
-
-
 
 
     @property
