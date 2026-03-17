@@ -36,7 +36,7 @@ def add_noise(signal: IQDataset,
     noise_std = np.sqrt(noise_powers / 2)
     noise = rng.normal(0, noise_std, signal_data.shape)
 
-    return IQDataset(torch.from_numpy(signal_data + noise).to(dtype=torch.float32), signal.labels)
+    return IQDataset(signal_data + noise, signal.labels)
 
 
 def add_interference(signal: IQDataset,

@@ -154,7 +154,7 @@ class IQGenerator:
         q_idx = (iq_signals[:, :, 1] + q_offset) // q_step
         return index_table[i_idx, q_idx]
 
-    def generate_dataset(self, num_samples=128, length=256, datatype=np.int8):
+    def generate_dataset(self, num_samples=128, length=256, datatype=np.int8, seed=None) -> IQDataset:
         """Generate a mixed-scheme IQDataset ready for training.
 
         Samples are assigned to modulation schemes according to
@@ -165,6 +165,10 @@ class IQGenerator:
             num_samples: Total number of signal sequences in the dataset.
                 Defaults to 128.
             length: Number of symbols per sequence. Defaults to 256.
+            datatype: NumPy dtype for the IQ data array. Defaults to int8.
+            seed: Optional per-call seed. When provided, a fresh generator is
+                created for this call only, leaving the instance generator
+                unchanged. Defaults to None (use the instance generator).
 
         Returns:
             IQDataset with data of shape (num_samples, length, 2) and labels
@@ -183,7 +187,7 @@ class IQGenerator:
             if count == 0:
                 continue
             # set those rows to IQ signals
-            iq_arr[mask] = self.generate_signals(n_samples=count, length=length, modulation_scheme=scheme)
+            iq_arr[mask] = self.generate_signals(n_samples=count, length=length, modulation_scheme=scheme, seed=seed)
             symbol_indices_arr[mask] = self.generate_softmax_indices_for_signals(iq_arr[mask], modulation_scheme=scheme)
 
         return IQDataset(data=iq_arr, labels=symbol_indices_arr)
