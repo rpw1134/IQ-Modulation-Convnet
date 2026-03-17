@@ -60,7 +60,7 @@ class IQGenerator:
         sfqam_mask = uni >= third_bound
         return bpsk_mask, qpsk_mask, stqam_mask, sfqam_mask
 
-    def _allocate_iq_and_label_arrays(self, num_samples, length):
+    def _allocate_iq_and_label_arrays(self, num_samples, length, datatype=np.int8):
         """Allocate zeroed arrays for IQ signals and symbol label indices.
 
         Args:
@@ -72,7 +72,7 @@ class IQGenerator:
             (num_samples, length, 2) with dtype int8, and symbol_indices_arr
             has shape (num_samples, length) with dtype uint8.
         """
-        iq_arr = np.zeros(shape=(num_samples, length, 2), dtype=np.int8)
+        iq_arr = np.zeros(shape=(num_samples, length, 2), dtype=datatype)
         symbol_indices_arr = np.zeros(shape=(num_samples, length), dtype=np.uint8)
         return iq_arr, symbol_indices_arr
 
@@ -154,7 +154,7 @@ class IQGenerator:
         q_idx = (iq_signals[:, :, 1] + q_offset) // q_step
         return index_table[i_idx, q_idx]
 
-    def generate_dataset(self, num_samples=128, length=256):
+    def generate_dataset(self, num_samples=128, length=256, datatype=np.int8):
         """Generate a mixed-scheme IQDataset ready for training.
 
         Samples are assigned to modulation schemes according to
@@ -171,7 +171,7 @@ class IQGenerator:
             of shape (num_samples, length) containing global class indices.
         """
         # allocate memory for the dataset
-        iq_arr, symbol_indices_arr = self._allocate_iq_and_label_arrays(num_samples=num_samples, length=length)
+        iq_arr, symbol_indices_arr = self._allocate_iq_and_label_arrays(num_samples=num_samples, length=length, datatype=datatype)
 
         # map masks to schemes for generation purposes
         mask_scheme_pairs = self._generate_mask_scheme_pairs(num_samples=num_samples)
@@ -188,7 +188,5 @@ class IQGenerator:
 
         return IQDataset(data=iq_arr, labels=symbol_indices_arr)
 
-    @property
-    def data_loader(self):
-        pass
+
 

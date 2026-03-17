@@ -1,8 +1,9 @@
+import torch
 from torch.utils.data import Dataset
 
 
 class IQDataset(Dataset):
-    def __init__(self, data, labels, transform=None):
+    def __init__(self, data: torch.Tensor, labels: torch.Tensor, transform=None):
         """
         Args:
             data: np.ndarray of shape (n_samples, length, 2), where axis 2 holds the I sample at index 0 and the Q sample at index 1.
